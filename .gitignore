@@ -1,0 +1,7 @@
+game.zip
+/tmp
+Debug.win32/
+simulator/
+testproto.v12.suo
+*.opensdf
+testproto.sdf
