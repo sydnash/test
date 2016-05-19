@@ -103,7 +103,7 @@ function MainScene:onCreate()
         --encode
         local myperson = addressbook_pb.Person()
         myperson.name = "name"
-        myperson.id = 123456
+        myperson.id = 3543488481790448384
         myperson.email = "tt@tmp.com"
         for i = 1, 3 do 
             local phone1 = myperson.phone:add() --addressbook_pb.Person.PhoneNumber()
@@ -116,7 +116,7 @@ function MainScene:onCreate()
         local file = io.open('testproto.txt', 'wb')
         file:write(str)
         file:close()
-        self.mysocket:send(str)
+        --self.mysocket:send(str)
         print(string.len(str))
         print(str)
         --decode

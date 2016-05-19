@@ -54,7 +54,7 @@ cc.FileUtils:getInstance():addSearchPath("res/")
 writablepath = cc.FileUtils:getInstance():getWritablePath()
 package.path = './src/?.lua;' .. package.path
 package.path = writablepath .. 'src/?.lua;' .. package.path
-
+print("123123")
 require("app.views.addressbook_pb.lua")
 require('app.core.LuaCustomEvent')
 local updater = require('app.updater.updater')
@@ -180,8 +180,22 @@ local function sendMSG()
     --encode
     local myperson = addressbook_pb.Person()
     myperson.name = "name"
-    myperson.id = 123456
+    myperson.id = "-3543488481790448384"
     myperson.email = "tt@tmp.com"
+    myperson.tint32 = 32;
+	myperson.tint64 = "-640000000000000000";
+	myperson.tuint32 = 32;
+	myperson.tuint64 = "640000000000000000";
+	myperson.tsint32 = -32;
+	myperson.tsint64 = "-640000000000000000";
+	myperson.tbool = false;
+	myperson.tfixed64 = "640000000000000000";
+	myperson.tsfixed64 = "-640000000000000000";
+	myperson.tdouble = 1.234092384;
+	myperson.tfixed32 = 32;
+	myperson.tsfixed32 = -32;
+	myperson.tfloat = 1.25;
+
     for i = 1, 3 do 
         local phone1 = myperson.phone:add() --addressbook_pb.Person.PhoneNumber()
         phone1.number = "128822444121"
@@ -193,7 +207,7 @@ local function sendMSG()
     local file = io.open('testproto.txt', 'wb')
     file:write(str)
     file:close()
-    self.mysocket:send(str)
+    --self.mysocket:send(str)
     print(string.len(str))
     print(str)
     --decode
@@ -203,9 +217,22 @@ local function sendMSG()
     print(operson.name)
     print(operson.id)
     print(operson.email)
-    for _, phone in ipairs(operson.phone) do
-        print(phone.number)
-        print(phone.type)
+    print(operson.tint32);
+	print(operson.tint64);
+	print(operson.tuint32);
+	print(operson.tuint64);
+	print(operson.tsint32);
+	print(operson.tsint64);
+	print(operson.tbool);
+	print(operson.tfixed64);
+	print(operson.tsfixed64);
+	print(operson.tdouble);
+	print(operson.tfixed32);
+	print(operson.tsfixed32);
+	print(operson.tfloat);
+
+    for k, v in pairs(operson) do
+        print(k, v)
     end
 
     print('lua int to binary string-------------')
@@ -250,3 +277,9 @@ local a1, a2, a3, a4 = 1, 2, 4, 5
 local a, n = average(a1, a2, a3, a4)
 print(a1, a2, a3, a4)
 print(a, n)
+
+a = 17592186044415
+print(a)
+a = 0xFFFFFFFFFF
+print(a)
+print(a * 20 * 1000 * 1000)

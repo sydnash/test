@@ -19,7 +19,9 @@
 local type = type
 local error = error
 local string = string
-
+local int64 = int64
+local uint64 = uint64
+local tostring = tostring
 module "type_checkers"
 function TypeChecker(acceptable_types)
     local acceptable_types = acceptable_types
@@ -46,7 +48,26 @@ function Int32ValueChecker()
         end
     end
 end
-
+function Int64ValueChecker()
+    local _MIN = int64.min
+    local _MAX = int64.max
+    return function(proposed_value)
+        proposed_value = int64.new(proposed_value)
+        if _MIN > proposed_value or proposed_value > _MAX then
+            error('Value out of range: ' .. proposed_value)
+        end
+    end
+end
+function Uint64ValueChecker()
+    local _MIN = uint64.min
+    local _MAX = uint64.max
+    return function(proposed_value)
+        proposed_value = uint64.new(proposed_value)
+        if _MIN > proposed_value or proposed_value > _MAX then
+            error('Value out of range: ' .. proposed_value)
+        end
+    end
+end
 function Uint32ValueChecker(IntValueChecker)
     local _MIN = 0
     local _MAX = 0xffffffff

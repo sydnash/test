@@ -19,26 +19,56 @@ local string = string
 local table = table
 local ipairs = ipairs
 local assert =assert
-
+local print = print
+local pairs = pairs
+local _G = _G
+local uint64 = uint64
+local int64 = int64
 local pb = require "pb"
 local wire_format = require "wire_format"
+local tostring = tostring
 module "encoder"
-
+for k, v in pairs(_G) do
+    print(k, v)
+end
+local T7F = uint64.new("127")
+local T3fff = uint64.new("16383")
+local T1fffff = uint64.new("2097151")
+local Tfffffff = uint64.new("268435455")
+local T7ffffffff  = uint64.new("34359738367")
+local T3FFFFFFFFFF  = uint64.new("4398046511103")
+local T1FFFFFFFFFFFF = uint64.new("562949953421311")
+local TFFFFFFFFFFFFFF = uint64.new("72057594037927935") 
+local T7FFFFFFFFFFFFFFF = uint64.new("9223372036854775807")
+local zero = int64.new("0")
 function _VarintSize(value)
-    if value <= 0x7f then return 1 end
-    if value <= 0x3fff then return 2 end
-    if value <= 0x1fffff then return 3 end
-    if value <= 0xfffffff then return 4 end
-    return 5 
+    value = uint64.new(value)
+    if value <= T7F then return 1 end
+    if value <= T3fff then return 2 end
+    if value <= T1fffff then return 3 end
+    if value <= Tfffffff then return 4 end
+    if value <= T7ffffffff then return 5 end
+    if value <= T3FFFFFFFFFF then return 6 end
+    if value <= T1FFFFFFFFFFFF then return 7 end
+    if value <= TFFFFFFFFFFFFFF then return 8 end
+    if value <= T7FFFFFFFFFFFFFFF then return 9 end
+    return 10
 end
 
 function _SignedVarintSize(value)
-    if value < 0 then return 10 end
-    if value <= 0x7f then return 1 end
-    if value <= 0x3fff then return 2 end
-    if value <= 0x1fffff then return 3 end
-    if value <= 0xfffffff then return 4 end
-    return 5
+    value = int64.new(value)
+    if value < zero then return 10 end
+    value = uint64.new(tostring(value))
+    if value <= T7F then return 1 end
+    if value <= T3fff then return 2 end
+    if value <= T1fffff then return 3 end
+    if value <= Tfffffff then return 4 end
+    if value <= T7ffffffff then return 5 end
+    if value <= T3FFFFFFFFFF then return 6 end
+    if value <= T1FFFFFFFFFFFF then return 7 end
+    if value <= TFFFFFFFFFFFFFF then return 8 end
+    if value <= T7FFFFFFFFFFFFFFF then return 9 end
+    return 10
 end
 
 function _TagSize(field_number)
@@ -131,8 +161,8 @@ EnumSizer = Int32Sizer
 UInt32Sizer = _SimpleSizer(_VarintSize)
 UInt64Sizer = UInt32Sizer 
 
-SInt32Sizer = _ModifiedSizer(_SignedVarintSize, wire_format.ZigZagEncode)
-SInt64Sizer = SInt32Sizer
+SInt32Sizer = _ModifiedSizer(_VarintSize, wire_format.ZigZagEncode)
+SInt64Sizer = _ModifiedSizer(_VarintSize, wire_format.ZigZagEncode64)
 
 Fixed32Sizer = _FixedSizer(4) 
 SFixed32Sizer = Fixed32Sizer
