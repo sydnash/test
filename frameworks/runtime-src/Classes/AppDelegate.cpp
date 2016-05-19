@@ -9,7 +9,7 @@
 #include "proto/binary_stream_proto.h"
 #include "updater/lua_UpdaterHelper_auto.hpp"
 #include "luaext/lua_extensions.h"
-
+#include "luaext/cocos2dx_manual.h"
 #if (CC_TARGET_PLATFORM != CC_PLATFORM_LINUX)
 #include "ide-support/CodeIDESupport.h"
 #endif
@@ -71,6 +71,7 @@ bool AppDelegate::applicationDidFinishLaunching()
     lua_module_register(L);
 	registTestFunc(L);
 	luaopen_lua_extensions_user(L);
+	register_all_extend_module(L);
 	register_all_binarystream_manual(L);
 	register_all_luaeventlistener_manual(L);
 	register_all_UpdaterHelper(L);

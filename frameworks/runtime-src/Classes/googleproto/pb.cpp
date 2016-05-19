@@ -42,6 +42,9 @@ extern "C" {
 #define IS_LITTLE_ENDIAN
 #endif
 
+#include "luaext/int64/lint64.h"
+#include "luaext/int64/ulint64.h"
+
 #define IOSTRING_META "protobuf.IOString"
 
 #define checkiostring(L) \
@@ -106,8 +109,9 @@ static void pack_varint(luaL_Buffer *b, uint64_t value)
 
 static int varint_encoder(lua_State *L)
 {
-    lua_Number l_value = luaL_checknumber(L, 2);
-    uint64_t value = (uint64_t)l_value;
+    //lua_Number l_value = luaL_checknumber(L, 2);
+    //uint64_t value = (uint64_t)l_value;
+	uint64_t value = (uint64_t)getUint64(L, 2);
 
     luaL_Buffer b;
     luaL_buffinit(L, &b);
@@ -122,8 +126,9 @@ static int varint_encoder(lua_State *L)
 
 static int signed_varint_encoder(lua_State *L)
 {
-    lua_Number l_value = luaL_checknumber(L, 2);
-    int64_t value = (int64_t)l_value;
+    //lua_Number l_value = luaL_checknumber(L, 2);
+    //int64_t value = (int64_t)l_value;
+    int64_t value = (int64_t)getInt64(L, 2);
     
     luaL_Buffer b;
     luaL_buffinit(L, &b);
@@ -165,7 +170,6 @@ static int struct_pack(lua_State *L)
 {
     uint8_t format = luaL_checkinteger(L, 2);
     lua_Number value = luaL_checknumber(L, 3);
-    lua_settop(L, 1);
 
     switch(format){
         case 'i':
@@ -176,7 +180,7 @@ static int struct_pack(lua_State *L)
             }
         case 'q':
             {
-                int64_t v = (int64_t)value;
+				int64_t v = getInt64(L, 3);// (int64_t)value;
                 pack_fixed64(L, (uint8_t*)&v);
                 break;
             }
@@ -200,13 +204,15 @@ static int struct_pack(lua_State *L)
             }
         case 'Q':
             {
-                uint64_t v = (uint64_t) value;
+				uint64_t v = getUint64(L, 3);// (uint64_t)value;
                 pack_fixed64(L, (uint8_t*)&v);
                 break;
             }
         default:
             luaL_error(L, "Unknown, format");
     }
+	lua_insert(L, 2);
+    lua_settop(L, 2);
     lua_call(L, 1, 0);
     return 0;
 }
@@ -247,7 +253,9 @@ static int varint_decoder(lua_State *L)
     if(len == -1){
         luaL_error(L, "error data %s, len:%d", buffer, len);
     }else{
-        lua_pushnumber(L, (lua_Number)unpack_varint(buffer, len));
+		uint64_t va = unpack_varint(buffer, len);
+		//pushUint64(L, va);
+		lua_pushnumber(L, lua_Number(va));
         lua_pushinteger(L, len + pos);
     }
     return 2;
@@ -264,10 +272,50 @@ static int signed_varint_decoder(lua_State *L)
     if(len == -1){
         luaL_error(L, "error data %s, len:%d", buffer, len);
     }else{
-        lua_pushnumber(L, (lua_Number)(int64_t)unpack_varint(buffer, len));
+		int64_t va = (int64_t)unpack_varint(buffer, len);
+		//pushInt64(L, va);
+		lua_pushnumber(L, lua_Number(va));
         lua_pushinteger(L, len + pos);
     }
     return 2;
+}
+
+static int varint_decoder64(lua_State *L)
+{
+	size_t len;
+	const char* buffer = luaL_checklstring(L, 1, &len);
+	size_t pos = luaL_checkinteger(L, 2);
+
+	buffer += pos;
+	len = size_varint(buffer, len);
+	if (len == -1){
+		luaL_error(L, "error data %s, len:%d", buffer, len);
+	}
+	else{
+		uint64_t va = unpack_varint(buffer, len);
+		pushUint64(L, va);
+		lua_pushinteger(L, len + pos);
+	}
+	return 2;
+}
+
+static int signed_varint_decoder64(lua_State *L)
+{
+	size_t len;
+	const char* buffer = luaL_checklstring(L, 1, &len);
+	size_t pos = luaL_checkinteger(L, 2);
+	buffer += pos;
+	len = size_varint(buffer, len);
+
+	if (len == -1){
+		luaL_error(L, "error data %s, len:%d", buffer, len);
+	}
+	else{
+		int64_t va = (int64_t)unpack_varint(buffer, len);
+		pushInt64(L, va);
+		lua_pushinteger(L, len + pos);
+	}
+	return 2;
 }
 
 static int zig_zag_encode32(lua_State *L)
@@ -288,17 +336,21 @@ static int zig_zag_decode32(lua_State *L)
 
 static int zig_zag_encode64(lua_State *L)
 {
-    int64_t n = (int64_t)luaL_checknumber(L, 1);
+    //int64_t n = (int64_t)luaL_checknumber(L, 1);
+	int64_t n = getInt64(L, 1);
     uint64_t value = (n << 1) ^ (n >> 63);
-    lua_pushinteger(L, value);
+    //lua_pushinteger(L, value);
+	pushUint64(L, value);
     return 1;
 }
 
 static int zig_zag_decode64(lua_State *L)
 {
-    uint64_t n = (uint64_t)luaL_checknumber(L, 1);
+    //uint64_t n = (uint64_t)luaL_checknumber(L, 1);
+	uint64_t n = getUint64(L, 1);
     int64_t value = (n >> 1) ^ - (int64_t)(n & 1);
-    lua_pushinteger(L, value);
+    //lua_pushinteger(L, value);
+	pushInt64(L, value);
     return 1;
 }
 
@@ -356,7 +408,9 @@ static int struct_unpack(lua_State *L)
             }
         case 'q':
             {
-                lua_pushnumber(L, (lua_Number)*(int64_t*)unpack_fixed64(buffer, out));
+                //lua_pushnumber(L, (lua_Number)*(int64_t*)unpack_fixed64(buffer, out));
+				int64_t va = *(int64_t*)unpack_fixed64(buffer, out);
+				pushInt64(L, va);
                 break;
             }
         case 'f':
@@ -376,7 +430,9 @@ static int struct_unpack(lua_State *L)
             }
         case 'Q':
             {
-                lua_pushnumber(L, (lua_Number)*(uint64_t*)unpack_fixed64(buffer, out));
+                //lua_pushnumber(L, (lua_Number)*(uint64_t*)unpack_fixed64(buffer, out));
+				uint64_t va = *(uint64_t*)unpack_fixed64(buffer, out);
+				pushUint64(L, va);
                 break;
             }
         default:
@@ -451,6 +507,8 @@ static const struct luaL_reg _pb [] = {
     {"struct_unpack", struct_unpack},
     {"varint_decoder", varint_decoder},
     {"signed_varint_decoder", signed_varint_decoder},
+    {"varint_decoder64", varint_decoder64},
+    {"signed_varint_decoder64", signed_varint_decoder64},
     {"zig_zag_decode32", zig_zag_decode32},
     {"zig_zag_encode32", zig_zag_encode32},
     {"zig_zag_decode64", zig_zag_decode64},
@@ -470,11 +528,12 @@ static const struct luaL_reg _c_iostring_m [] = {
 
 int luaopen_pb (lua_State *L)
 {
-    luaL_newmetatable(L, IOSTRING_META);
-    lua_pushvalue(L, -1);
-    lua_setfield(L, -2, "__index");
-    luaL_register(L, NULL, _c_iostring_m);
+	luaL_newmetatable(L, IOSTRING_META); //mt
+    lua_pushvalue(L, -1); //mt mt
+    lua_setfield(L, -2, "__index"); //mt
+    luaL_register(L, NULL, _c_iostring_m); //
 
-    luaL_register(L, "pb", _pb);
-    return 1;
+    luaL_register(L, "pb", _pb);//mt table
+	lua_pop(L, 2);
+    return 0;
 } 
